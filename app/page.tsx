@@ -1,65 +1,98 @@
-import Image from "next/image";
+async function getAIDescription(repo: any) {
+  // Fetch README
+  let readme = "";
+  try {
+    const readmeRes = await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_USERNAME}/${repo.name}/readme`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.raw",
+        },
+      }
+    );
+    if (readmeRes.ok) {
+      readme = await readmeRes.text();
+    }
+  } catch {}
 
-export default function Home() {
+  // Call our AI route
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/describe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      repoName: repo.name,
+      description: repo.description,
+      language: repo.language,
+      readme,
+    }),
+  });
+
+  const data = await res.json();
+  return data.description;
+}
+
+export default async function Home() {
+  const res = await fetch(
+    `https://api.github.com/users/${process.env.GITHUB_USERNAME}/repos?sort=updated&per_page=6`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      },
+      next: { revalidate: 3600 },
+    }
+  );
+
+  const repos = await res.json();
+
+  // Get AI descriptions for all repos in parallel
+  const reposWithAI = await Promise.all(
+    repos.map(async (repo: any) => ({
+      ...repo,
+      aiDescription: await getAIDescription(repo),
+    }))
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main style={{ padding: "40px", fontFamily: "sans-serif", background: "#0a0a0a", minHeight: "100vh", color: "white" }}>
+      <h1 style={{ fontSize: "32px", marginBottom: "4px" }}>My Portfolio</h1>
+      <p style={{ color: "#666", marginBottom: "32px" }}>⚡ Auto-synced from GitHub · AI-powered descriptions</p>
+
+      <div style={{ display: "grid", gap: "20px" }}>
+        {reposWithAI.map((repo: any) => (
+          <div
+            key={repo.id}
+            style={{
+              border: "1px solid #222",
+              borderRadius: "12px",
+              padding: "24px",
+              background: "#111",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <h2 style={{ margin: "0 0 8px 0", fontSize: "20px" }}>{repo.name}</h2>
+
+            {/* AI Description */}
+            <p style={{ color: "#ccc", margin: "0 0 8px 0", lineHeight: "1.6" }}>
+              {repo.aiDescription}
+            </p>
+
+            {/* Original GitHub description in smaller text */}
+            {repo.description && (
+              <p style={{ color: "#555", fontSize: "13px", margin: "0 0 12px 0" }}>
+                GitHub: {repo.description}
+              </p>
+            )}
+
+            <p style={{ fontSize: "13px", color: "#444", margin: "0 0 16px 0" }}>
+              ⭐ {repo.stargazers_count} &nbsp;·&nbsp; 🍴 {repo.forks_count} &nbsp;·&nbsp; {repo.language || "Unknown"}
+            </p>
+
+            <a href={repo.html_url} target="_blank" style={{ color: "#4f9eff", fontSize: "14px" }}>
+              View on GitHub →
+            </a>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }
