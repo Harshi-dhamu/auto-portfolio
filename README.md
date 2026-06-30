@@ -25,6 +25,9 @@ A self-updating developer portfolio that automatically syncs with your GitHub re
 | [License](#-license) | MIT License |
 
 ---
+## Read the writeup
+
+https://dev.to/harshi_dhamu_b092c693795d/i-built-a-portfolio-that-updates-itself-when-i-push-to-github-3a2l
 
 ## ✨ Features
 

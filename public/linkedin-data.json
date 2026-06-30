@@ -1,0 +1,30 @@
+{
+  "experience": [],
+  "education": [
+    {
+      "school": "SRM Valliammai Engineering College",
+      "degree": "Bachelor's degree",
+      "field": "",
+      "startDate": "Sep 2023",
+      "endDate": "May 2026"
+    },
+    {
+      "school": "Indian Institute of Technology, Madras",
+      "degree": "Bachelor of Science - BS",
+      "field": "",
+      "startDate": "Jun 2024",
+      "endDate": "Present"
+    }
+  ],
+  "skills": [
+    "Nmap",
+    "Linux",
+    "Burp Suite",
+    "Cybersecurity",
+    "English",
+    "Research Skills",
+    "Communication",
+    "Microsoft Office"
+  ],
+  "certifications": []
+}
